@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Match Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+      
+        :root {
+            --game-bg: #2D3748; 
+            --card-front-bg: #4299E1; 
+            --card-back-bg: #A0AEC0; 
+            --matched-card-bg: #48BB78; 
+            --text-color: #E2E8F0; 
+            --accent-color: #F5A623; /
+            --button-bg: #4299E1;
+            --button-hover-bg: #3182CE;
+            --border-radius-sm: 8px;
+            --border-radius-lg: 12px;
+            --box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            --font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            background-color: var(--game-bg);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .game-container {
+            background-color: var(--game-bg);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--box-shadow);
+            padding: 30px;
+            text-align: center;
+            width: 100%;
+            max-width: 900px; /* Max width for the game area */
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: var(--card-back-bg);
+            border-radius: var(--border-radius-sm);
+            color: var(--primary-dark);
+            font-weight: bold;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .info-item {
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-item i {
+            color: var(--button-bg);
+            font-size: 1.4em;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4 columns for a 4x4 grid */
+            gap: 15px;
+            perspective: 1000px; /* For 3D flip effect */
+            margin: 0 auto; /* Center the grid */
+            max-width: 600px; /* Max width for the card grid itself */
+        }
+
+        .card {
+            width: 100%;
+            height: 120px; /* Fixed height for cards */
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease-in-out;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            box-shadow: var(--box-shadow);
+        }
+
+        .card.flip {
+            transform: rotateY(180deg);
+        }
+
+      
+        .card.matched {
+            cursor: default;
+            pointer-events: none; 
+            
+        }
+
+        .card.matched .card-front {
+            background-color: var(--matched-card-bg); /* Bright green for matched cards */
+            transition: background-color 0.5s ease; /* Smooth color change */
+        }
+
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden; /* Hide the back of the card when flipped */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5em; /* Icon size */
+            border-radius: var(--border-radius-sm);
+            color: white; /* Icon color */
+        }
+
+        .card-front {
+            background-color: var(--card-front-bg);
+            transform: rotateY(180deg); /* Initially hidden */
+        }
+
+        .card-back {
+            background-color: var(--card-back-bg);
+            color: var(--primary-dark); /* Icon color for back of card */
+        }
+
+        .game-controls {
+            margin-top: 30px;
+        }
+
+        .btn {
+            background-color: var(--button-bg);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px; /* Pill-shaped button */
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background-color: var(--button-hover-bg);
+            transform: translateY(-3px);
+        }
+
+        /* Message Box  */
+        .message-box {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .message-content {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--box-shadow);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+        }
+
+        .message-content h3 {
+            color: var(--accent-color);
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+
+        .message-content p {
+            font-size: 1.2em;
+            color: var(--text-color);
+            margin-bottom: 25px;
+        }
+
+        .message-box .btn {
+            margin-top: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5em; }
+            .game-info { flex-direction: column; gap: 10px; padding: 10px; }
+            .info-item { font-size: 1em; }
+            .game-board {
+                grid-template-columns: repeat(4, 1fr); /* Still 4 columns, but cards will shrink */
+                gap: 10px;
+            }
+            .card { height: 100px; } /* Smaller cards */
+            .card-face { font-size: 2em; }
+            .btn { padding: 10px 20px; font-size: 1em; }
+            .message-content { padding: 30px; }
+            .message-content h3 { font-size: 1.8em; }
+            .message-content p { font-size: 1.1em; }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 2em; margin-bottom: 15px; }
+            .game-container { padding: 15px; }
+            .game-board {
+                grid-template-columns: repeat(3, 1fr); /* 3 columns for smaller screens */
+                gap: 8px;
+            }
+            .card { height: 90px; }
+            .card-face { font-size: 1.8em; }
+            .btn { padding: 8px 15px; font-size: 0.9em; }
+            .message-content { padding: 25px; }
+            .message-content h3 { font-size: 1.5em; }
+            .message-content p { font-size: 1em; }
+        }
+        /* --- END OF EMBEDDED CSS --- */
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>Memory Match</h1>
+
+        <div class="game-info">
+            <div class="info-item">
+                <i class="fas fa-star"></i> Score: <span id="score">0</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-clock"></i> Time: <span id="timer">60</span>s
+            </div>
+        </div>
+
+        <div class="game-board" id="gameBoard">
+            </div>
+
+        <div class="game-controls">
+            <button class="btn" id="startGameBtn"><i class="fas fa-play"></i> Start Game</button>
+        </div>
+    </div>
+
+    <div id="messageBox" class="message-box">
+        <div class="message-content">
+            <h3 id="messageTitle"></h3>
+            <p id="messageText"></p>
+            <button class="btn" id="closeMessageBtn"><i class="fas fa-redo"></i> Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- START OF EMBEDDED JAVASCRIPT --- */
+
+        // Game state variables
+        const gameBoard = document.getElementById('gameBoard');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const messageBox = document.getElementById('messageBox');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const closeMessageBtn = document.getElementById('closeMessageBtn');
+
+        let cards = []; 
+        let hasFlippedCard = false;
+        let lockBoard = false; // Prevents multiple cards from being flipped quickly
+        let firstCard, secondCard;
+        let score = 0;
+        let timer = 60; // Initial time in seconds
+        let countdown; // Variable to hold setInterval for timer
+        let matchedPairs = 0;
+        const totalPairs = 8; // For a 4x4 grid (16 cards / 2)
+
+        // Icons for the cards (Font Awesome classes)
+        const cardIcons = [
+            'fa-cat', 'fa-dog', 'fa-fish', 'fa-frog',
+            'fa-hippo', 'fa-horse', 'fa-dragon', 'fa-spider'
+        ];
+
+        // Function to initialize and shuffle cards
+        function initializeGame() {
+            // Create pairs of icons
+            cards = [...cardIcons, ...cardIcons];
+            // Shuffle cards using Fisher-Yates algorithm
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+
+            // Reset game state
+            score = 0;
+            timer = 60;
+            matchedPairs = 0;
+            scoreDisplay.textContent = score;
+            timerDisplay.textContent = timer;
+            gameBoard.innerHTML = ''; // Clear existing cards
+            hasFlippedCard = false;
+            lockBoard = false;
+            firstCard = null;
+            secondCard = null;
+
+            // Create card elements and add to board
+            cards.forEach(iconClass => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.icon = iconClass; // Store icon for matching
+
+                cardElement.innerHTML = `
+                    <div class="card-face card-front"><i class="fas ${iconClass}"></i></div>
+                    <div class="card-face card-back"><i class="fas fa-question"></i></div>
+                `;
+                cardElement.addEventListener('click', flipCard);
+                gameBoard.appendChild(cardElement);
+            });
+
+            hideMessageBox(); // Ensure message box is hidden
+            startGameBtn.textContent = 'Restart Game';
+            startGameBtn.classList.remove('btn-disabled'); // Enable button
+            startGameBtn.disabled = false;
+        }
+
+        // Function to handle card flipping
+        function flipCard() {
+            if (lockBoard) return; // If board is locked, do nothing
+            if (this === firstCard) return; // Prevent double-clicking the same card
+
+            this.classList.add('flip'); // Add flip animation class
+
+            if (!hasFlippedCard) {
+                // First card flipped
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+
+            // Second card flipped
+            secondCard = this;
+            lockBoard = true; // Lock board to prevent further flips
+
+            checkForMatch();
+        }
+
+        
+        function checkForMatch() {
+            const isMatch = firstCard.dataset.icon === secondCard.dataset.icon;
+
+            if (isMatch) {
+                disableCards(); // Keep cards open and change color
+            } else {
+                unflipCards(); // Flip cards back
+            }
+        }
+
+        
+        function disableCards() {
+            // Remove click listeners and add 'matched' class
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+
+            // Add 'matched' class which will change the card-front's background color
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+
+            updateScore(10); // Increase score for a match
+            matchedPairs++;
+            resetBoard(); // Reset board for next turn
+            checkWin(); // Check if game is won
+        }
+
+        // Function to unflip non-matching cards
+        function unflipCards() {
+            // Add a delay before unflips for user to see cards
+            setTimeout(() => {
+                firstCard.classList.remove('flip');
+                secondCard.classList.remove('flip');
+                resetBoard(); // Reset board for next turn
+            }, 1000);
+        }
+
+        // Function to reset flipped cards and unlock board
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+
+        // Function to update the score
+        function updateScore(points) {
+            score += points;
+            scoreDisplay.textContent = score;
+        }
+
+        // Function to start the game timer
+        function startTimer() {
+            clearInterval(countdown); // Clear any existing timer
+            countdown = setInterval(() => {
+                timer--;
+                timerDisplay.textContent = timer;
+                if (timer <= 10) {
+                    timerDisplay.style.color = 'var(--accent-color)'; // Highlight low time
+                } else {
+                    timerDisplay.style.color = 'var(--text-color)';
+                }
+
+                if (timer <= 0) {
+                    clearInterval(countdown);
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        // Function to check for win condition
+        function checkWin() {
+            if (matchedPairs === totalPairs) {
+                clearInterval(countdown); // Stop timer
+                showMessage('Congratulations!', `You matched all pairs with a score of ${score} and ${timer} seconds left!`);
+            }
+        }
+
+        // Function to handle game over
+        function gameOver() {
+            showMessage('Game Over!', `Time's up! Your final score is ${score}.`);
+            // Optionally disable all cards if game over by time
+            document.querySelectorAll('.card').forEach(card => card.removeEventListener('click', flipCard));
+        }
+
+        // Function to show the message box
+        function showMessage(title, text) {
+            messageTitle.textContent = title;
+            messageText.textContent = text;
+            messageBox.style.display = 'flex';
+        }
+
+        // Function to hide the message box
+        function hideMessageBox() {
+            messageBox.style.display = 'none';
+        }
+
+        // Event Listeners
+        startGameBtn.addEventListener('click', () => {
+            initializeGame();
+            startTimer();
+        });
+
+        closeMessageBtn.addEventListener('click', () => {
+            hideMessageBox();
+            initializeGame(); // Restart game when "Play Again" is clicked
+            startTimer(); // Start timer for new game
+        });
+
+        /* --- END OF EMBEDDED JAVASCRIPT --- */
+    </script>
+</body>
+</html>
